@@ -8,8 +8,13 @@ from sys import maxsize
 
 obstacles = []
 
+
 def cross_product(vec1: Vertex, vec2: Vertex):
+    """
+    :return: pseudo_scalar multiplication between vec1 and vec2
+    """
     return vec1.x * vec2.y - vec1.y * vec2.x
+
 
 def dot_product(vec1: Vertex, vec2: Vertex):
     return vec1.x * vec2.x + vec1.y * vec2.y
@@ -44,6 +49,10 @@ def segments_intersection(seg1_begin, seg1_end, seg2_begin, seg2_end):
 
 
 def dist(vert1: Vertex, vert2: Vertex):
+    """
+    Counts distance between vert1 and vert2 in R^2
+    """
+
     return sqrt((vert1.x - vert2.x) ** 2 + (vert1.y - vert2.y) ** 2)
 
 
@@ -64,18 +73,31 @@ def collision_free(dot1, dot2):
 
 
 def nearest(tree, vertex):
-    change_flag = False
+    """
+    Find the nearest vertex in tree (including edges) to the given one
+    If nearest point lies on edge, changes relations (child - parent) for vertices of that edge
+    :return: nearest vertex from existing, or new vertex on a tree edge
+    """
     graph_vertices = tree.get_vertices()
     min_vert = tree.get_vertices()[0]
     min_dist = dist(vertex, min_vert)
     min_seg_dist = 1000000000
     min_seg_dot = 0
     for i in range(1, len(graph_vertices)):
+        """
+        Use geometric fact to see if we should build new vertex or use created ones:
+        it counts dot products for vectors of triangle (given_vert, segment_vert1, segment_vert2) to see, if 
+        angles near the segment are sharp
+        """
         seg_begin, seg_end = graph_vertices[graph_vertices[i].parent], graph_vertices[i]
         geom_arg1 = dot_product(seg_end - vertex, seg_end - seg_begin)
         geom_arg2 = dot_product(seg_begin - vertex, seg_begin - seg_end)
 
         if geom_arg1 * geom_arg2 > 0:
+            """
+            means all angels are sharp. Find perpendicular unit vector to segment, count coefficient from area formula
+            and add it to start vertex 
+            """
             segment_normal = Vertex(seg_begin.y - seg_end.y, seg_end.x - seg_begin.x)
             segment_normal /= dist(segment_normal, Vertex(0, 0))
             if dot_product(segment_normal, seg_end - vertex) < 0:
@@ -95,6 +117,9 @@ def nearest(tree, vertex):
                 min_seg_dist = dist(result, vertex)
 
         else:
+            """
+            one of the angles is obtuse, should check end points of segment
+            """
             begin_dist, end_dist = dist(seg_begin, vertex), dist(seg_end, vertex)
             if begin_dist > end_dist:
                 if end_dist < min_dist:
@@ -105,6 +130,7 @@ def nearest(tree, vertex):
                     min_dist = begin_dist
                     min_vert = seg_begin
 
+    """if we use dot on a segment (not start and end ones), we change relations in tree"""
     if min_dist > min_seg_dist:
         saved_parent = min_seg_dot.parent
         tree.add(min_seg_dot)
@@ -115,7 +141,10 @@ def nearest(tree, vertex):
 
 
 def steer(graph_vert: Vertex, rand_vertex: Vertex):
-    current_dot = 0
+    """
+    if segment between random vertex and vertex on graph intersects with obstacles,
+    moves random vertex closer to graph vertex
+    """
     for i in arange(0, 1, 0.01):
         current_dot = (graph_vert - rand_vertex) * i + rand_vertex
         current_dot.round()
@@ -124,6 +153,10 @@ def steer(graph_vert: Vertex, rand_vertex: Vertex):
 
 
 def nearest_to_end(tree, end_vert):
+    """
+    secial function to proccess adding of exit vertex. The main difference - we chose nearest dot on graph only if
+    segment (end_vert, graph_vert) does not intersect any obstacles
+    """
     min_vert = tree.get_vertices()[0]
     min_vert.set_parent(-1)
     min_dist = dist(min_vert, end_vert)
@@ -174,15 +207,10 @@ def RRT(N, Qinit: Vertex, Qexit: Vertex, obst: list):
     tree = Tree()
     tree.add(Qinit)
 
-    random.seed(2036653558153635619)
+#    random.seed(2036653558153635619)
     for i in range(N):
-        if i == 220:
-            pass
         Qrand = Vertex(random.randint(0, WIDTH), random.randint(0, HEIGHT), 0)
-        try:
-            Qnearest = nearest(tree, Qrand)
-        except:
-            raise ValueError
+        Qnearest = nearest(tree, Qrand)
         Qsteered = steer(Qnearest, Qrand)
 
         if Qsteered:
@@ -190,6 +218,10 @@ def RRT(N, Qinit: Vertex, Qexit: Vertex, obst: list):
             tree.add(Qsteered)
 
     Qnearest = nearest_to_end(tree, Qexit)
+    """
+    could happen, that tree is built, but exit point cannot be connected with it
+    if condition below is true, than Qexit could be added
+    """
     if Qnearest.parent != -1:
         Qexit.set_parent(tree.get_vertices().index(Qnearest))
         tree.add(Qexit)

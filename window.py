@@ -1,6 +1,7 @@
 import RRt
 import wx
 import SaveAndLoad
+from Tree import Vertex, Tree
 from config import *
 
 

@@ -12,7 +12,7 @@ EXEC_RRT_BUTTON = wx.NewIdRef()
 SET_ITER_BUTTON = wx.NewIdRef()
 SAVE_BUTTON = wx.NewIdRef()
 LOAD_BUTTON = wx.NewIdRef()
-
+CLEAR_BUTTON = wx.NewIdRef()
 
 BUTTON_SIZE = wx.Size(150, 50)
 
@@ -67,6 +67,9 @@ class MyFrame(wx.Frame):
         bg2 = wx.BoxSizer(wx.HORIZONTAL)
         bg2.AddMany([(save_button, 0, wx.RIGHT, 5), (load_button, 0, wx.LEFT, 5)])
 
+        clear_button = wx.Button(self, CLEAR_BUTTON, label="Clear Scene", size=(75, 25))
+        clear_button.Bind(wx.EVT_BUTTON, self.clear_map)
+
         fg.Add(define_start_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
         fg.Add(define_end_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
         fg.Add(define_obstacle_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
@@ -74,6 +77,7 @@ class MyFrame(wx.Frame):
         fg.Add(bg1, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
         fg.Add(set_iter_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
         fg.Add(bg2, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
+        fg.Add(clear_button, 0, wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP, 20)
 
         self.SetSizer(fg)
 
@@ -152,6 +156,11 @@ class MyFrame(wx.Frame):
             self.starting_point, self.exit_point, obstacles = SaveAndLoad.load_map(dlg.GetPath())
             self.rrt_tree = 0
             self.Refresh()
+
+    def clear_map(self, event):
+        obstacles.clear()
+        self.rrt_result, self.rrt_tree = 0, 0
+        self.Refresh()
 
     def onPaint(self, event):
         dc = wx.PaintDC(self)
